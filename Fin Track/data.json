@@ -1,0 +1,28 @@
+{
+  "users": {
+    "pratik": {
+      "password": "scrypt:32768:8:1$IoUyI155lsCf3KxM$b64c86543317c0f9849ccb6a0196e9ca75c6a6f45ced253ae6dc29b4a2883c48b6e7c7b738e4f4e8b6e8c7c8c0862416758c27acb4939cf89046395d3a893426",
+      "transactions": [],
+      "udhaar": [
+        {
+          "id": 1794574713102,
+          "type": "lent",
+          "name": "srut",
+          "amount": 10000,
+          "date": "2026-11-13",
+          "due": "2026-11-30",
+          "remind": 3,
+          "note": "food",
+          "rate": 0.07,
+          "rateUnit": "month",
+          "interestType": "simple",
+          "settled": false
+        }
+      ],
+      "profile": {
+        "photo": "",
+        "theme": "mint"
+      }
+    }
+  }
+}
