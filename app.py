@@ -74,7 +74,10 @@ def login_required(fn):
 # ---------- Pages ----------
 @app.route("/")
 def home():
-    return send_from_directory(app.static_folder, "index.html")
+    # Yeh ensure karega ki agar static folder mein index.html hai toh woh seedha khul jaye
+    if os.path.exists(os.path.join(BASE, "static", "index.html")):
+        return send_from_directory(app.static_folder, "index.html")
+    return jsonify(message="Fin Track API is running successfully!"), 200
 
 
 # ---------- Auth ----------
