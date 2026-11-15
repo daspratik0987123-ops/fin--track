@@ -1459,3 +1459,150 @@ footer {
     color: #a86400;
     font-weight: bold;
 }
+
+
+/* ---------- Monthly Expense Alert / Celebration Banner ---------- */
+.expense-banner {
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    animation: popIn 0.35s ease;
+}
+
+.expense-banner.alert {
+    background: #fde8ea;
+    color: #b4232c;
+    border-left: 5px solid #e65d65;
+}
+
+.expense-banner.celebrate {
+    background: #dcf5ec;
+    color: #0b6e4f;
+    border-left: 5px solid #16a779;
+}
+
+@keyframes popIn {
+    0% { opacity: 0; transform: translateY(-8px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Daily Saving Tasks Panel ---------- */
+.saving-panel {
+    margin-bottom: 25px;
+    border-top: 4px solid #20b486;
+}
+
+.saving-sub {
+    color: #788497;
+    font-size: 12px;
+    display: block;
+    margin-top: 4px;
+}
+
+.saving-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.saving-pill {
+    background: #eef6f3;
+    color: #0f8a63;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+}
+
+.saving-pill.streak {
+    background: #fff3df;
+    color: #b36b00;
+}
+
+.saving-tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.task-card {
+    background: #f8fafc;
+    border: 1px solid #e4eaf2;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.task-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.task-head strong {
+    font-size: 14px;
+    color: #17243b;
+}
+
+.task-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: #e2e8f0;
+    color: #475569;
+    white-space: nowrap;
+}
+
+.task-badge.completed {
+    background: #dcf5ec;
+    color: #0f8a63;
+    font-weight: bold;
+}
+
+.task-card p {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.quick-save-btns {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.save-chip {
+    margin: 0;
+    padding: 8px;
+    font-size: 13px;
+    background: #20b486;
+    border-radius: 8px;
+}
+
+.save-chip:hover {
+    background: #16946d;
+}
+
+.task-action-btn {
+    margin-top: auto;
+    padding: 10px;
+    font-size: 13px;
+}
+
+.task-action-btn:disabled {
+    background: #94a3b8;
+    cursor: default;
+}
+
+@media (max-width: 900px) {
+    .saving-tasks-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -41,6 +41,14 @@ var isRegisterMode = false;
 var udhaarItems = [];
 var editingUdhaarId = null;
 var udhaarFilter = "pending";
+
+// NEW: Daily Savings data structure
+var savingsData = {
+    totalSaved: 0,
+    savedDates: {},     // e.g. { "2026-11-15": 50 }
+    noSpendDates: [],   // e.g. ["2026-11-14"]
+    auditDates: []      // e.g. ["2026-11-15"]
+};
  
 var profile = { photo: "", theme: "mint" };
 var themeNames = ["mint", "sunset", "ocean", "aurora", "night", "photo"];
@@ -50,7 +58,6 @@ var currentView = "main";
 var toastTimer = null;
  
 // ---------- Server (Flask API) ----------
-// Login ke baad server ek token deta hai. Wo token har request ke saath bhejte hain.
 var authToken = localStorage.getItem("fintrackToken") || "";
  
 function api(method, url, body) {
@@ -100,6 +107,10 @@ function saveUdhaar() {
  
 function saveProfile() {
     pushToServer({ profile: profile });
+}
+
+function saveSavings() {
+    pushToServer({ savings: savingsData });
 }
  
 // ---------- Small helpers ----------
@@ -155,7 +166,6 @@ function interestEndDate(item) {
     return todayString();
 }
  
-// Interest "date given" se aaj tak (ya settle hone tak) ginta hai
 function calcInterest(item) {
     var rate = Number(item.rate) || 0;
     if (rate <= 0) return 0;
@@ -319,7 +329,7 @@ document.getElementById("themeRow").addEventListener("click", function (event) {
     applyProfile();
 });
  
-// ---------- Views (Dashboard / Udhaar / Calculator / Settings) ----------
+// ---------- Views ----------
 var views = { main: "viewMain", udhaar: "viewUdhaar", calc: "viewCalc", settings: "viewSettings" };
  
 function showView(name) {
@@ -396,10 +406,17 @@ function showLoginPage() {
 }
  
 function showApp() {
-    // Pehle server se is user ka saara data laao, phir screen dikhao
     api("GET", "/api/data").then(function (data) {
         transactions = data.transactions || [];
         udhaarItems = data.udhaar || [];
+        
+        // Load Daily Savings Data
+        savingsData = {
+            totalSaved: (data.savings && data.savings.totalSaved) || 0,
+            savedDates: (data.savings && data.savings.savedDates) || {},
+            noSpendDates: (data.savings && data.savings.noSpendDates) || [],
+            auditDates: (data.savings && data.savings.auditDates) || []
+        };
  
         profile = { photo: "", theme: "mint" };
         if (data.profile) {
@@ -421,6 +438,7 @@ function showApp() {
         searchInput.value = "";
         renderTransactions();
         updateDashboard();
+        renderDailySavings(); // Render Daily Savings Tasks
  
         var reminders = renderUdhaar();
         showView("main");
@@ -503,6 +521,7 @@ function logout() {
     currentUser = null;
     transactions = [];
     udhaarItems = [];
+    savingsData = { totalSaved: 0, savedDates: {}, noSpendDates: [], auditDates: [] };
     profile = { photo: "", theme: "mint" };
  
     applyProfile();
@@ -534,6 +553,88 @@ function formatMoney(amount) {
         currency: currentCurrency
     }).format(amount);
 }
+
+// ---------- NEW: Daily Saving Tasks Logic ----------
+function renderDailySavings() {
+    var todayStr = todayString();
+    document.getElementById("totalSavedDisplay").textContent = formatMoney(savingsData.totalSaved);
+    document.getElementById("noSpendCount").textContent = savingsData.noSpendDates.length;
+
+    // Task 1: Gullak status
+    var savedToday = savingsData.savedDates[todayStr] || 0;
+    var savedStatus = document.getElementById("todaySavedStatus");
+    if (savedToday > 0) {
+        savedStatus.textContent = "Saved " + formatMoney(savedToday) + " today ✅";
+        savedStatus.classList.add("completed");
+    } else {
+        savedStatus.textContent = "Pending today";
+        savedStatus.classList.remove("completed");
+    }
+
+    // Task 2: No-Spend Day status
+    var isNoSpend = savingsData.noSpendDates.indexOf(todayStr) !== -1;
+    var noSpendStatus = document.getElementById("noSpendStatus");
+    var noSpendBtn = document.getElementById("markNoSpendBtn");
+    if (isNoSpend) {
+        noSpendStatus.textContent = "Completed ✅";
+        noSpendStatus.classList.add("completed");
+        noSpendBtn.textContent = "🎉 No-Spend Day Marked!";
+        noSpendBtn.disabled = true;
+    } else {
+        noSpendStatus.textContent = "Not marked";
+        noSpendStatus.classList.remove("completed");
+        noSpendBtn.textContent = "✅ Mark Today as No-Spend Day";
+        noSpendBtn.disabled = false;
+    }
+
+    // Task 3: Daily Audit status
+    var isAudited = savingsData.auditDates.indexOf(todayStr) !== -1;
+    var auditStatus = document.getElementById("auditStatus");
+    var auditBtn = document.getElementById("markAuditBtn");
+    if (isAudited) {
+        auditStatus.textContent = "Done ✅";
+        auditStatus.classList.add("completed");
+        auditBtn.textContent = "🎉 Today's Audit Completed!";
+        auditBtn.disabled = true;
+    } else {
+        auditStatus.textContent = "Pending";
+        auditStatus.classList.remove("completed");
+        auditBtn.textContent = "📋 Complete Today's Audit";
+        auditBtn.disabled = false;
+    }
+}
+
+document.querySelectorAll(".save-chip").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+        var amt = parseFloat(this.getAttribute("data-amt"));
+        var todayStr = todayString();
+        savingsData.totalSaved = round2(savingsData.totalSaved + amt);
+        savingsData.savedDates[todayStr] = round2((savingsData.savedDates[todayStr] || 0) + amt);
+        saveSavings();
+        renderDailySavings();
+        showToast("🎉 Wah! " + formatMoney(amt) + " aapki Gullak mein jud gaye!");
+    });
+});
+
+document.getElementById("markNoSpendBtn").addEventListener("click", function () {
+    var todayStr = todayString();
+    if (savingsData.noSpendDates.indexOf(todayStr) === -1) {
+        savingsData.noSpendDates.push(todayStr);
+        saveSavings();
+        renderDailySavings();
+        showToast("🔥 Zabardast! Aaj aapne koi fuzul kharcha nahi kiya!");
+    }
+});
+
+document.getElementById("markAuditBtn").addEventListener("click", function () {
+    var todayStr = todayString();
+    if (savingsData.auditDates.indexOf(todayStr) === -1) {
+        savingsData.auditDates.push(todayStr);
+        saveSavings();
+        renderDailySavings();
+        showToast("✅ Aaj ka daily expense audit complete ho gaya!");
+    }
+});
  
 // ---------- Transactions Add / Edit / Delete ----------
 function resetForm() {
@@ -791,7 +892,7 @@ document.getElementById("circleBtn").addEventListener("click", function () {
     document.getElementById("barChart").classList.add("hidden");
 });
  
-// ---------- Monthly comparison ----------
+// ---------- Monthly comparison + Alert / Celebration Banner ----------
 function getMonthKey(date) {
     var month = date.getMonth() + 1;
     if (month < 10) month = "0" + month;
@@ -856,6 +957,24 @@ function updateComparison() {
     var balEl = document.getElementById("changeBalance");
     balEl.textContent = formatDiff(balDiff);
     balEl.className = balDiff > 0 ? "positive" : balDiff < 0 ? "negative" : "";
+
+    // NEW: Monthly Expense Alert & Celebration Logic
+    var banner = document.getElementById("monthlyExpenseBanner");
+    if (old.expense > 0) {
+        if (cur.expense > old.expense) {
+            var overAmt = formatMoney(cur.expense - old.expense);
+            banner.className = "expense-banner alert";
+            banner.innerHTML = "⚠️ <strong>Expense Alert:</strong> Is mahine (" + thisName + ") aapka kharcha " + lastName + " ke mukable <strong>" + overAmt + " zyada</strong> ho gaya hai! Thoda control karein.";
+        } else if (cur.expense < old.expense) {
+            var savedAmt = formatMoney(old.expense - cur.expense);
+            banner.className = "expense-banner celebrate";
+            banner.innerHTML = "🎉 <strong>Celebration Time!</strong> Badhai ho! Is mahine aapne " + lastName + " se <strong>" + savedAmt + " kam kharch</strong> kiye hain! Keep saving! 🥳";
+        } else {
+            banner.className = "expense-banner hidden";
+        }
+    } else {
+        banner.className = "expense-banner hidden";
+    }
 }
  
 // ---------- Udhaar (Lend / Borrow) ----------
@@ -1151,6 +1270,7 @@ currencySelect.addEventListener("change", function () {
     updateDashboard();
     renderTransactions();
     renderUdhaar();
+    renderDailySavings();
     showToast("Currency changed to " + currentCurrency);
 });
  
@@ -1179,7 +1299,8 @@ document.getElementById("exportDataBtn").addEventListener("click", function () {
         user: currentUser,
         exportedAt: new Date().toISOString(),
         transactions: transactions,
-        udhaar: udhaarItems
+        udhaar: udhaarItems,
+        savings: savingsData
     };
     var blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
     var a = document.createElement("a");
@@ -1190,14 +1311,17 @@ document.getElementById("exportDataBtn").addEventListener("click", function () {
 });
  
 document.getElementById("resetDataBtn").addEventListener("click", function () {
-    if (confirm("Are you sure? This will delete all your transactions and udhaar records permanently.")) {
+    if (confirm("Are you sure? This will delete all your transactions, savings, and udhaar records permanently.")) {
         transactions = [];
         udhaarItems = [];
+        savingsData = { totalSaved: 0, savedDates: {}, noSpendDates: [], auditDates: [] };
         saveData();
         saveUdhaar();
+        saveSavings();
         renderTransactions();
         updateDashboard();
         renderUdhaar();
+        renderDailySavings();
         showToast("All data reset.");
     }
 });
@@ -1262,7 +1386,6 @@ function reminderMessage(item, daysLeft) {
     return item.name + " ko " + amount + " dene hain - " + when;
 }
  
-// Har pending udhaar ke liye din mein ek baar notification bhejta hai
 function checkReminders() {
     if (!currentUser) return;
     if (!("Notification" in window) || Notification.permission !== "granted") return;

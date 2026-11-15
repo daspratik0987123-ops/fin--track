@@ -47,7 +47,7 @@ def write_db(db):
     tmp = DATA_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(db, f, indent=2, ensure_ascii=False)
-    os.replace(tmp, DATA_FILE)  # safe save, file adhoori nahi likhi jayegi
+    os.replace(tmp, DATA_FILE)
 
 
 # ---------- Login check ----------
@@ -74,7 +74,6 @@ def login_required(fn):
 # ---------- Pages ----------
 @app.route("/")
 def home():
-    # Yeh ensure karega ki agar static folder mein index.html hai toh woh seedha khul jaye
     if os.path.exists(os.path.join(BASE, "static", "index.html")):
         return send_from_directory(app.static_folder, "index.html")
     return jsonify(message="Fin Track API is running successfully!"), 200
@@ -95,9 +94,10 @@ def register():
         if username in db["users"]:
             return jsonify(error="This username is already taken."), 409
         db["users"][username] = {
-            "password": generate_password_hash(password),  # hashed, plain nahi
+            "password": generate_password_hash(password),
             "transactions": [],
             "udhaar": [],
+            "savings": {"totalSaved": 0, "savedDates": {}, "noSpendDates": [], "auditDates": []},
             "profile": {"photo": "", "theme": "mint"},
         }
         write_db(db)
@@ -145,6 +145,7 @@ def get_data(username):
     return jsonify(
         transactions=user.get("transactions", []),
         udhaar=user.get("udhaar", []),
+        savings=user.get("savings", {"totalSaved": 0, "savedDates": {}, "noSpendDates": [], "auditDates": []}),
         profile=user.get("profile", {"photo": "", "theme": "mint"}),
     )
 
@@ -164,6 +165,8 @@ def save_data(username):
             user["transactions"] = body["transactions"]
         if isinstance(body.get("udhaar"), list):
             user["udhaar"] = body["udhaar"]
+        if isinstance(body.get("savings"), dict):
+            user["savings"] = body["savings"]
         if isinstance(body.get("profile"), dict):
             user["profile"] = body["profile"]
 

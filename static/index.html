@@ -75,7 +75,7 @@
                 </div>
             </div>
             <button type="button" id="logoutBtn" class="logout-btn">Logout</button>
-            <small>Version 1.4</small>
+            <small>Version 1.5</small>
         </div>
     </aside>
 
@@ -92,6 +92,9 @@
 
         <!-- ================= DASHBOARD / TRANSACTIONS / REPORTS ================= -->
         <div id="viewMain">
+
+            <!-- NEW: Monthly Expense Comparison Alert / Celebration Banner -->
+            <div id="monthlyExpenseBanner" class="expense-banner hidden"></div>
 
             <div class="top-area">
 
@@ -135,6 +138,61 @@
                 </div>
 
             </div>
+
+            <!-- NEW: Daily Saving Tasks Panel -->
+            <section class="panel saving-panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2>🎯 Daily Saving Tasks</h2>
+                        <small class="saving-sub">Chhoti bachat, bada fayda! Aaj ka task poora karein.</small>
+                    </div>
+                    <div class="saving-stats">
+                        <span class="saving-pill">💰 Saved: <strong id="totalSavedDisplay">₹0</strong></span>
+                        <span class="saving-pill streak">🔥 No-Spend Days: <strong id="noSpendCount">0</strong></span>
+                    </div>
+                </div>
+
+                <div class="saving-tasks-grid">
+                    <!-- Task 1: Quick Micro-Savings -->
+                    <div class="task-card">
+                        <div class="task-head">
+                            <strong>1. Gullak (Micro-Saving)</strong>
+                            <span id="todaySavedStatus" class="task-badge">Pending today</span>
+                        </div>
+                        <p>Din bhar ke kharche se thode paise alag bachayein:</p>
+                        <div class="quick-save-btns">
+                            <button type="button" class="save-chip" data-amt="10">+ ₹10</button>
+                            <button type="button" class="save-chip" data-amt="20">+ ₹20</button>
+                            <button type="button" class="save-chip" data-amt="50">+ ₹50</button>
+                            <button type="button" class="save-chip" data-amt="100">+ ₹100</button>
+                        </div>
+                    </div>
+
+                    <!-- Task 2: No-Spend Day Challenge -->
+                    <div class="task-card">
+                        <div class="task-head">
+                            <strong>2. No-Spend Day Challenge</strong>
+                            <span id="noSpendStatus" class="task-badge">Not marked</span>
+                        </div>
+                        <p>Kya aapne aaj koi fuzul kharcha (bahar ka khana/shopping) nahi kiya?</p>
+                        <button type="button" id="markNoSpendBtn" class="done-btn task-action-btn">
+                            ✅ Mark Today as No-Spend Day
+                        </button>
+                    </div>
+
+                    <!-- Task 3: Daily Expense Check-in -->
+                    <div class="task-card">
+                        <div class="task-head">
+                            <strong>3. Daily Expense Audit</strong>
+                            <span id="auditStatus" class="task-badge">Pending</span>
+                        </div>
+                        <p>Aaj ke saare kharche record karne ke baad check-in complete karein.</p>
+                        <button type="button" id="markAuditBtn" class="task-action-btn">
+                            📋 Complete Today's Audit
+                        </button>
+                    </div>
+                </div>
+            </section>
 
             <section class="content-grid">
 
