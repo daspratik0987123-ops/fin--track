@@ -42,12 +42,12 @@ var udhaarItems = [];
 var editingUdhaarId = null;
 var udhaarFilter = "pending";
 
-// NEW: Daily Savings data structure
+// Daily Savings data structure
 var savingsData = {
     totalSaved: 0,
-    savedDates: {},     // e.g. { "2026-11-15": 50 }
-    noSpendDates: [],   // e.g. ["2026-11-14"]
-    auditDates: []      // e.g. ["2026-11-15"]
+    savedDates: {},
+    noSpendDates: [],
+    auditDates: []
 };
  
 var profile = { photo: "", theme: "mint" };
@@ -195,7 +195,7 @@ function rateLabel(item) {
     return "Interest: " + item.rate + "% per " + unit + " (" + kind + ")";
 }
  
-// ---------- Profile (photo + background theme) ----------
+// ---------- Profile ----------
 function applyProfile() {
     var letter = currentUser ? currentUser.charAt(0).toUpperCase() : "?";
     var avatars = document.querySelectorAll(".avatar");
@@ -295,9 +295,6 @@ document.getElementById("photoInput").addEventListener("change", function () {
             profile.photo = canvas.toDataURL("image/jpeg", 0.85);
             saveProfile();
             applyProfile();
-        };
-        img.onerror = function () {
-            alert("Could not read this image. Try a JPG or PNG photo.");
         };
         img.src = reader.result;
     };
@@ -410,7 +407,6 @@ function showApp() {
         transactions = data.transactions || [];
         udhaarItems = data.udhaar || [];
         
-        // Load Daily Savings Data
         savingsData = {
             totalSaved: (data.savings && data.savings.totalSaved) || 0,
             savedDates: (data.savings && data.savings.savedDates) || {},
@@ -438,7 +434,7 @@ function showApp() {
         searchInput.value = "";
         renderTransactions();
         updateDashboard();
-        renderDailySavings(); // Render Daily Savings Tasks
+        renderDailySavings();
  
         var reminders = renderUdhaar();
         showView("main");
@@ -554,13 +550,12 @@ function formatMoney(amount) {
     }).format(amount);
 }
 
-// ---------- NEW: Daily Saving Tasks Logic ----------
+// ---------- Daily Saving Tasks Logic ----------
 function renderDailySavings() {
     var todayStr = todayString();
     document.getElementById("totalSavedDisplay").textContent = formatMoney(savingsData.totalSaved);
     document.getElementById("noSpendCount").textContent = savingsData.noSpendDates.length;
 
-    // Task 1: Gullak status
     var savedToday = savingsData.savedDates[todayStr] || 0;
     var savedStatus = document.getElementById("todaySavedStatus");
     if (savedToday > 0) {
@@ -571,7 +566,6 @@ function renderDailySavings() {
         savedStatus.classList.remove("completed");
     }
 
-    // Task 2: No-Spend Day status
     var isNoSpend = savingsData.noSpendDates.indexOf(todayStr) !== -1;
     var noSpendStatus = document.getElementById("noSpendStatus");
     var noSpendBtn = document.getElementById("markNoSpendBtn");
@@ -587,7 +581,6 @@ function renderDailySavings() {
         noSpendBtn.disabled = false;
     }
 
-    // Task 3: Daily Audit status
     var isAudited = savingsData.auditDates.indexOf(todayStr) !== -1;
     var auditStatus = document.getElementById("auditStatus");
     var auditBtn = document.getElementById("markAuditBtn");
@@ -787,7 +780,7 @@ function updateDashboard() {
     updateCategoryChart();
 }
  
-// ---------- Expenses by category (circle chart) ----------
+// ---------- Expenses by category ----------
 var categoryColors = {
     Food: "#f2a93b",
     Travel: "#287cc4",
@@ -854,7 +847,7 @@ function updateCategoryChart() {
     circle.style.background = "conic-gradient(" + parts.join(", ") + ")";
 }
  
-// ---------- Circle / Bar Chart Toggle ----------
+// ---------- Charts Toggle ----------
 function updateCircle(totalIncome, totalExpense) {
     var circle = document.getElementById("circle");
     var total = totalIncome + totalExpense;
@@ -892,7 +885,7 @@ document.getElementById("circleBtn").addEventListener("click", function () {
     document.getElementById("barChart").classList.add("hidden");
 });
  
-// ---------- Monthly comparison + Alert / Celebration Banner ----------
+// ---------- Monthly comparison & Real-Time Cross-Check Alert ----------
 function getMonthKey(date) {
     var month = date.getMonth() + 1;
     if (month < 10) month = "0" + month;
@@ -958,26 +951,41 @@ function updateComparison() {
     balEl.textContent = formatDiff(balDiff);
     balEl.className = balDiff > 0 ? "positive" : balDiff < 0 ? "negative" : "";
 
-    // NEW: Monthly Expense Alert & Celebration Logic
+    // 🚀 NEW SMART LOGIC: Real-time Cross-Check Alert (Month end tak wait nahi karega)
+    var currentDay = now.getDate();
+    var pastMonthSamePeriodExpense = 0;
+
+    for (var i = 0; i < transactions.length; i++) {
+        var t = transactions[i];
+        if (t.type === "expense" && t.date) {
+            var tMonth = t.date.substring(0, 7);
+            var tDay = parseInt(t.date.substring(8, 10), 10);
+            // Pichle mahine ka wahi tareekh tak ka total kharcha
+            if (tMonth === lastKey && tDay <= currentDay) {
+                pastMonthSamePeriodExpense += t.amount;
+            }
+        }
+    }
+
     var banner = document.getElementById("monthlyExpenseBanner");
-    if (old.expense > 0) {
-        if (cur.expense > old.expense) {
-            var overAmt = formatMoney(cur.expense - old.expense);
+    if (pastMonthSamePeriodExpense > 0) {
+        if (cur.expense > pastMonthSamePeriodExpense) {
+            var crossAmount = formatMoney(cur.expense - pastMonthSamePeriodExpense);
             banner.className = "expense-banner alert";
-            banner.innerHTML = "⚠️ <strong>Expense Alert:</strong> Is mahine (" + thisName + ") aapka kharcha " + lastName + " ke mukable <strong>" + overAmt + " zyada</strong> ho gaya hai! Thoda control karein.";
-        } else if (cur.expense < old.expense) {
-            var savedAmt = formatMoney(old.expense - cur.expense);
-            banner.className = "expense-banner celebrate";
-            banner.innerHTML = "🎉 <strong>Celebration Time!</strong> Badhai ho! Is mahine aapne " + lastName + " se <strong>" + savedAmt + " kam kharch</strong> kiye hain! Keep saving! 🥳";
+            banner.innerHTML = "⚠️ <strong>Real-Time Alert:</strong> Aapne pichle mahine ka is tareekh tak ka record tod diya hai! Is mahine ka kharcha pichle mahine se <strong>" + crossAmount + " aage</strong> nikal gaya hai. Control karein!";
+            banner.classList.remove("hidden");
         } else {
-            banner.className = "expense-banner hidden";
+            var safeAmount = formatMoney(pastMonthSamePeriodExpense - cur.expense);
+            banner.className = "expense-banner celebrate";
+            banner.innerHTML = "🎉 <strong>Great Going!</strong> Aap pichle mahine ke mukable abhi bhi <strong>" + safeAmount + " safe (neeche)</strong> chal rahe hain. Shabaash! 🥳";
+            banner.classList.remove("hidden");
         }
     } else {
         banner.className = "expense-banner hidden";
     }
 }
  
-// ---------- Udhaar (Lend / Borrow) ----------
+// ---------- Udhaar ----------
 uType.addEventListener("change", function () {
     if (this.value === "lent") {
         document.getElementById("uNameLabel").textContent = "Who did you give it to?";
@@ -1260,7 +1268,7 @@ document.getElementById("calcUse").addEventListener("click", function () {
     }
 });
  
-// ---------- Settings Logic ----------
+// ---------- Settings ----------
 var currencySelect = document.getElementById("currencySelect");
 currencySelect.value = currentCurrency;
  
@@ -1326,7 +1334,7 @@ document.getElementById("resetDataBtn").addEventListener("click", function () {
     }
 });
  
-// ---------- Reminders (device notifications) ----------
+// ---------- Reminders ----------
 var swEnabled = false;
  
 function setupReminders() {
@@ -1461,7 +1469,7 @@ document.getElementById("enableReminderBtn").addEventListener("click", function 
 setupReminders();
 setInterval(checkReminders, 60000);
  
-// ---------- Auto Login Check on Page Load ----------
+// ---------- Auto Login Check ----------
 var savedUser = localStorage.getItem("fintrackCurrentUser");
 if (savedUser && authToken) {
     currentUser = savedUser;
